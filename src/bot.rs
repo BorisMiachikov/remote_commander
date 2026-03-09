@@ -16,6 +16,8 @@ type AllowedIds = Arc<Vec<i64>>;
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase", description = "Команды Remote Commander:")]
 enum Command {
+    #[command(description = "Список всех команд")]
+    Help,
     #[command(description = "Статус системы (CPU и RAM)")]
     Status,
     #[command(description = "Открыть YouTube в браузере")]
@@ -26,6 +28,8 @@ enum Command {
     Vol(String),
     #[command(description = "Выключить компьютер (запросит подтверждение)")]
     Poweroff,
+    #[command(description = "Перезагрузить компьютер (запросит подтверждение)")]
+    Reboot,
 }
 
 pub async fn run(token: String, allowed_ids: Vec<i64>, manager: SharedManager) {
@@ -65,6 +69,11 @@ async fn handle_command(
     }
 
     match cmd {
+        Command::Help => {
+            bot.send_message(chat_id, Command::descriptions().to_string())
+                .await?;
+        }
+
         Command::Status => {
             info!("Команда /status от {}", chat_id.0);
             let stats = manager.lock().await.get_metrics();
@@ -133,6 +142,17 @@ async fn handle_command(
                 .reply_markup(keyboard)
                 .await?;
         }
+
+        Command::Reboot => {
+            info!("Команда /reboot от {}", chat_id.0);
+            let keyboard = InlineKeyboardMarkup::new([[
+                InlineKeyboardButton::callback("✅ Да, перезагрузить", "confirm_reboot"),
+                InlineKeyboardButton::callback("❌ Отмена", "cancel_reboot"),
+            ]]);
+            bot.send_message(chat_id, "Перезагрузить компьютер?")
+                .reply_markup(keyboard)
+                .await?;
+        }
     }
 
     Ok(())
@@ -174,6 +194,25 @@ async fn handle_callback(
 
         Some("cancel_poweroff") => {
             info!("Выключение отменено пользователем {}", chat_id.0);
+            if let Some(msg) = &q.message {
+                bot.edit_message_text(chat_id, msg.id, "Отменено.").await?;
+            }
+        }
+
+        Some("confirm_reboot") => {
+            info!("Подтверждение перезагрузки от {}", chat_id.0);
+            if let Some(msg) = &q.message {
+                bot.edit_message_text(chat_id, msg.id, "Перезагружаю компьютер...")
+                    .await?;
+            }
+            if let Err(e) = manager.lock().await.reboot() {
+                bot.send_message(chat_id, format!("Ошибка перезагрузки: {e}"))
+                    .await?;
+            }
+        }
+
+        Some("cancel_reboot") => {
+            info!("Перезагрузка отменена пользователем {}", chat_id.0);
             if let Some(msg) = &q.message {
                 bot.edit_message_text(chat_id, msg.id, "Отменено.").await?;
             }

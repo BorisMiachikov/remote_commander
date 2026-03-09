@@ -1,7 +1,6 @@
 mod autostart;
 mod bot;
 mod config;
-mod http;
 mod system_manager;
 
 use std::sync::Arc;
@@ -49,12 +48,9 @@ async fn main() {
     let manager = Arc::new(Mutex::new(system_manager::SystemManager::new()));
 
     info!(
-        "Remote Commander запущен. IDs: {:?}, HTTP порт: {}",
-        config.allowed_chat_ids, config.http_port
+        "Remote Commander запущен. IDs: {:?}",
+        config.allowed_chat_ids
     );
 
-    tokio::join!(
-        bot::run(config.bot_token, config.allowed_chat_ids, Arc::clone(&manager)),
-        http::run(config.http_port, Arc::clone(&manager)),
-    );
+    bot::run(config.bot_token, config.allowed_chat_ids, manager).await;
 }

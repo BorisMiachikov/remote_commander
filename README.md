@@ -1,16 +1,15 @@
 # Remote Commander
 
-Приложение на Rust для удалённого управления компьютером через Telegram-бот и локальный HTTP API.
+Приложение на Rust для удалённого управления компьютером через Telegram-бот.
 
 ## Возможности
 
 - **Telegram-бот** — управление через личный чат, защита whitelist по chat_id
-- **HTTP API** — `POST /api/command` для интеграции со скриптами и другими ботами
 - **Мониторинг** — загрузка CPU и использование RAM
 - **Управление процессами** — завершение процесса по имени
 - **Громкость** — установка уровня системного звука (0–100)
 - **Браузер** — открытие YouTube одной командой
-- **Питание** — выключение с подтверждением
+- **Питание** — выключение и перезагрузка с подтверждением
 - **Автозапуск** — Task Scheduler (Windows) / systemd (Linux)
 
 ## Быстрый старт
@@ -31,7 +30,7 @@ cp .env.example .env
 ```env
 TELEGRAM_BOT_TOKEN=1234567890:AAFxxxxxxxxxxxxxxxxxxxx
 ALLOWED_CHAT_IDS=123456789
-HTTP_PORT=3000
+RUST_LOG=remote_commander=info
 ```
 
 ### 3. Собрать и запустить
@@ -63,48 +62,13 @@ systemctl --user enable --now remote_commander
 
 | Команда | Описание |
 |---------|----------|
+| `/help` | Список всех команд |
 | `/status` | CPU % и RAM (МБ) |
 | `/youtube` | Открыть YouTube в браузере |
 | `/kill <имя>` | Завершить процесс, например `/kill chrome.exe` |
 | `/vol <0-100>` | Установить громкость, например `/vol 50` |
 | `/poweroff` | Выключить компьютер (с подтверждением) |
-
----
-
-## HTTP API
-
-**Endpoint:** `POST http://localhost:3000/api/command`
-
-**Запрос:**
-```json
-{"command": "...", "arg": "..."}
-```
-
-**Ответ:**
-```json
-{"ok": true, "message": "..."}
-```
-
-| `command` | `arg` | Описание |
-|-----------|-------|----------|
-| `status` | — | Метрики CPU и RAM |
-| `youtube` | — | Открыть YouTube |
-| `kill` | имя процесса | Завершить процесс |
-| `vol` | 0–100 | Установить громкость |
-| `poweroff` | — | Выключить компьютер |
-
-**Примеры:**
-```bash
-curl -X POST http://localhost:3000/api/command \
-  -H "Content-Type: application/json" \
-  -d '{"command":"status"}'
-
-curl -X POST http://localhost:3000/api/command \
-  -d '{"command":"kill","arg":"chrome.exe"}'
-
-curl -X POST http://localhost:3000/api/command \
-  -d '{"command":"vol","arg":"40"}'
-```
+| `/reboot` | Перезагрузить компьютер (с подтверждением) |
 
 ---
 
@@ -115,7 +79,7 @@ curl -X POST http://localhost:3000/api/command \
 | Язык | Rust 2021 |
 | Async runtime | tokio |
 | Telegram | teloxide 0.12 |
-| HTTP | axum 0.7 |
-| Система | sysinfo, system_shutdown, webbrowser |
+| Мониторинг | sysinfo 0.30 |
 | Аудио (Windows) | Windows Core Audio COM API |
+| Аудио (Linux) | amixer |
 | Конфиг | dotenvy (.env) |

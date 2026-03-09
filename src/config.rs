@@ -3,7 +3,6 @@ use anyhow::{Context, Result};
 pub struct Config {
     pub bot_token: String,
     pub allowed_chat_ids: Vec<i64>,
-    pub http_port: u16,
 }
 
 impl Config {
@@ -33,15 +32,9 @@ impl Config {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let http_port = std::env::var("HTTP_PORT")
-            .ok()
-            .and_then(|s| s.parse::<u16>().ok())
-            .unwrap_or(3000);
-
         Ok(Self {
             bot_token,
             allowed_chat_ids,
-            http_port,
         })
     }
 }
