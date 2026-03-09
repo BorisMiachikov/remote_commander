@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use teloxide::{
     prelude::*,
-    types::{InlineKeyboardButton, InlineKeyboardMarkup},
+    types::{InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, KeyboardMarkup},
     utils::command::BotCommands,
 };
 use tokio::sync::Mutex;
@@ -13,9 +13,21 @@ use crate::system_manager::SystemManager;
 type SharedManager = Arc<Mutex<SystemManager>>;
 type AllowedIds = Arc<Vec<i64>>;
 
+fn main_keyboard() -> KeyboardMarkup {
+    KeyboardMarkup::new([
+        vec![KeyboardButton::new("/status"), KeyboardButton::new("/youtube")],
+        vec![KeyboardButton::new("/kill"), KeyboardButton::new("/vol")],
+        vec![KeyboardButton::new("/poweroff"), KeyboardButton::new("/reboot")],
+        vec![KeyboardButton::new("/help")],
+    ])
+    .resize_keyboard(true)
+}
+
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase", description = "Команды Remote Commander:")]
 enum Command {
+    #[command(description = "Показать меню управления")]
+    Start,
     #[command(description = "Список всех команд")]
     Help,
     #[command(description = "Статус системы (CPU и RAM)")]
@@ -69,6 +81,13 @@ async fn handle_command(
     }
 
     match cmd {
+        Command::Start => {
+            info!("Команда /start от {}", chat_id.0);
+            bot.send_message(chat_id, "Remote Commander запущен. Выберите команду:")
+                .reply_markup(main_keyboard())
+                .await?;
+        }
+
         Command::Help => {
             bot.send_message(chat_id, Command::descriptions().to_string())
                 .await?;
